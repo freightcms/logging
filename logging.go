@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"log"
+	"sync"
 )
 
 type LogLevel int
@@ -16,6 +17,7 @@ type (
 		SetFlags(int)
 	}
 	SimpleLogger struct {
+		lock          sync.RWMutex
 		level         LogLevel
 		debugLogger   *log.Logger
 		infoLogger    *log.Logger
@@ -27,43 +29,55 @@ type (
 // Debug implements ILogger.
 func (l *SimpleLogger) Debug(message string, args ...any) {
 	if l.level&DebugLogLevel == 1 {
+		l.lock.RLock()
 		l.debugLogger.Printf(message, args...)
+		l.lock.RUnlock()
 	}
 }
 
 // Error implements ILogger.
 func (l *SimpleLogger) Error(message string, args ...any) {
 	if l.level&ErrorLogLevel == 1 {
+		l.lock.RLock()
 		l.errorLogger.Printf(message, args...)
+		l.lock.RUnlock()
 	}
 }
 
 // Info implements ILogger.
 func (l *SimpleLogger) Info(message string, args ...any) {
 	if l.level&InfoLogLevel == 1 {
+		l.lock.RLock()
 		l.infoLogger.Printf(message, args...)
+		l.lock.RUnlock()
 	}
 }
 
 // Warning implements ILogger.
 func (l *SimpleLogger) Warning(message string, args ...any) {
 	if l.level&WarningLogLevel == 1 {
+		l.lock.RLock()
 		l.warningLogger.Printf(message, args...)
+		l.lock.RUnlock()
 	}
 }
 
 func (l *SimpleLogger) SetOutput(w io.Writer) {
+	l.lock.Lock()
 	l.debugLogger.SetOutput(w)
 	l.infoLogger.SetOutput(w)
 	l.warningLogger.SetOutput(w)
 	l.errorLogger.SetOutput(w)
+	l.lock.Unlock()
 }
 
 func (l *SimpleLogger) SetFlags(flags int) {
+	l.lock.Lock()
 	l.debugLogger.SetFlags(flags)
 	l.infoLogger.SetFlags(flags)
 	l.warningLogger.SetFlags(flags)
 	l.errorLogger.SetFlags(flags)
+	l.lock.Unlock()
 }
 
 const (
